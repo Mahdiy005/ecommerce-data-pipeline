@@ -1,0 +1,79 @@
+version: 2
+
+models:
+  - name: stg_products
+    description: >
+      Product data with standardized text values, converted numeric
+      values, parsed dates, normalized statuses, and duplicate product
+      identifiers removed.
+
+    columns:
+      - name: product_id
+        description: Unique identifier for each product.
+        data_tests:
+          - not_null
+          - unique
+
+      - name: product_name
+        description: Cleaned product name.
+        data_tests:
+          - not_null
+
+      - name: category
+        description: Product category.
+        data_tests:
+          # - not_null
+
+      - name: brand
+        description: Product brand.
+        data_tests:
+          # - not_null
+
+      - name: unit_price
+        description: Selling price paid by the customer.
+        data_tests:
+          - not_null
+
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "> 0"
+
+      - name: cost_price
+        description: Cost of purchasing or manufacturing the product.
+        data_tests:
+          - not_null
+
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= 0"
+
+      - name: stock_quantity
+        description: Available product quantity in inventory.
+        data_tests:
+          - not_null
+
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= 0"
+
+      - name: supplier_id
+        description: Identifier of the product supplier.
+        data_tests:
+          - not_null
+
+      - name: created_at
+        description: Date the product was created.
+        data_tests:
+          # - not_null
+
+      - name: status
+        description: Current product availability status.
+        data_tests:
+          - not_null
+
+          - accepted_values:
+              arguments:
+                values:
+                  - Active
+                  - Inactive
+                  - Discontinued

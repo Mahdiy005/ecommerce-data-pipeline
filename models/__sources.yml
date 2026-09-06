@@ -1,0 +1,13 @@
+version: 2
+
+# Try using these source definitions instead!
+sources:
+  - name: finance_raw
+    schema: RAW
+    database: FINANCE_DB
+    description: E-commerce data for the Jaffle Shop
+    tables:
+      - name: customers
+      - name: products
+      - name: order_items
+      - name: orders

@@ -1,0 +1,70 @@
+version: 2
+
+models:
+  - name: stg_customers
+    description: >
+      Cleaned and deduplicated customer data.
+      Contains one row per customer.
+
+    columns:
+      - name: customer_id
+        description: The unique identifier for each customer.
+        data_tests:
+          - not_null
+          - unique
+
+      - name: full_name
+        description: Cleaned customer full name.
+        data_tests:
+          - not_null
+
+      - name: email
+        description: Cleaned and validated customer email address.
+        data_tests:
+          - unique
+
+      - name: phone
+        description: Customer phone containing digits and an optional plus sign.
+
+      - name: city
+        description: Cleaned customer city.
+        data_tests:
+          - not_null
+
+      - name: governorate
+        description: Cleaned customer governorate.
+        data_tests:
+          - not_null
+
+      - name: signup_date
+        description: Date on which the customer signed up.
+        data_tests:
+
+      - name: birth_date
+        description: Customer birth date.
+
+      - name: gender
+        description: Normalized customer gender.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - Male
+                  - Female
+                  - Unknown
+
+      - name: loyalty_points
+        description: Customer loyalty points as a non-negative number.
+        data_tests:
+          - not_null
+
+      - name: is_active
+        description: Indicates whether the customer is active.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - true
+                  - false

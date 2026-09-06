@@ -1,0 +1,27 @@
+version: 2
+
+models:
+  - name: invalid_orders
+    description: "Orders rejected during validation."
+
+    columns:
+      - name: order_id
+        tests:
+          - not_null
+
+      - name: rejection_reason
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - MISSING_ORDER_ID
+                  - MISSING_CUSTOMER_ID
+                  - CUSTOMER_NOT_FOUND
+                  - INVALID_ORDER_DATE
+                  - NEGATIVE_ORDER_TOTAL
+                  - INVALID_CURRENCY
+
+      - name: audited_at
+        tests:
+          - not_null

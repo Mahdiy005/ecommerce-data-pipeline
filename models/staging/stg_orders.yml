@@ -1,0 +1,90 @@
+version: 2
+
+models:
+  - name: stg_orders
+    description: >
+      Orders with standardized text values, parsed dates,
+      converted numeric values, and duplicate order IDs removed.
+
+    columns:
+      - name: order_id
+        description: Unique identifier for each order.
+        data_tests:
+          - not_null
+          - unique
+
+      - name: customer_id
+        description: Customer who placed the order.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_customers')
+                field: customer_id
+
+      - name: order_date
+        description: Date when the order was placed.
+        data_tests:
+          # - not_null
+      - name: order_status
+        data_tests:
+          - not_null
+
+          - accepted_values:
+              arguments:
+                values:
+                  - Pending
+                  - Processing
+                  - Shipped
+                  - Delivered
+                  - Cancelled
+
+      - name: payment_method
+        data_tests:
+          - not_null
+
+          - accepted_values:
+              arguments:
+                values:
+                  - Card
+                  - Cash
+                  - Bank Transfer
+                  - Wallet
+
+      - name: shipping_city
+        data_tests:
+          - not_null
+
+      - name: shipping_fee
+        data_tests:
+          - not_null
+
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= 0"
+
+      - name: discount_amount
+        data_tests:
+          - not_null
+
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= 0"
+
+      - name: order_total
+        data_tests:
+          # - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "> 0"
+
+      - name: currency
+        data_tests:
+          - not_null
+
+          - accepted_values:
+              arguments:
+                values:
+                  - EGP
+                  - SAR
+                  - USD
