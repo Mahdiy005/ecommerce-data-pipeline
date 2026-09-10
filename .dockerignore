@@ -1,0 +1,10 @@
+.git
+.gitignore
+.env
+.vscode
+__pycache__
+*.py[cod]
+dbt_packages
+dbt_internal_packages
+logs
+target

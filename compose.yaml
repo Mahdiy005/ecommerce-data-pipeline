@@ -1,0 +1,120 @@
+name: jaffle-shop
+
+x-airflow-common: &airflow-common
+  build:
+    context: .
+    args:
+      AIRFLOW_VERSION: "3.3.1"
+  image: jaffle-shop-airflow:3.3.1
+  env_file:
+    - ${ENV_FILE_PATH:-.env}
+  environment: &airflow-environment
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__CORE__AUTH_MANAGER: airflow.providers.fab.auth_manager.fab_auth_manager.FabAuthManager
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
+    AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+    AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY}
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg://airflow:${POSTGRES_PASSWORD}@postgres/airflow
+    AIRFLOW__CORE__EXECUTION_API_SERVER_URL: http://airflow-api-server:8080/execution/
+    AIRFLOW__API_AUTH__JWT_SECRET: ${AIRFLOW_JWT_SECRET}
+    AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: "true"
+    DBT_PROJECT_DIR: /opt/airflow/dbt
+    DBT_PROFILES_DIR: /opt/airflow/dbt-profile
+    SNOWFLAKE_ACCOUNT: ${SNOWFLAKE_ACCOUNT}
+    SNOWFLAKE_USER: ${SNOWFLAKE_USER}
+    SNOWFLAKE_PASSWORD: ${SNOWFLAKE_PASSWORD}
+    SNOWFLAKE_ROLE: ${SNOWFLAKE_ROLE:-TRANSFORMER}
+    SNOWFLAKE_DATABASE: ${SNOWFLAKE_DATABASE:-FINANCE_DB}
+    SNOWFLAKE_WAREHOUSE: ${SNOWFLAKE_WAREHOUSE:-TRANSFORMING_WH}
+    SNOWFLAKE_SCHEMA: ${SNOWFLAKE_SCHEMA:-RAW}
+  volumes:
+    - ./dags:/opt/airflow/dags:ro
+    - ./:/opt/airflow/dbt
+    - ./docker/dbt:/opt/airflow/dbt-profile:ro
+    - airflow-logs:/opt/airflow/logs
+    - airflow-config:/opt/airflow/config
+  depends_on:
+    postgres:
+      condition: service_healthy
+
+services:
+  postgres:
+    image: postgres:16.10-bookworm
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: airflow
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U airflow -d airflow"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  airflow-init:
+    <<: *airflow-common
+    environment:
+      <<: *airflow-environment
+      _AIRFLOW_DB_MIGRATE: "true"
+      _AIRFLOW_WWW_USER_CREATE: "true"
+      _AIRFLOW_WWW_USER_USERNAME: ${AIRFLOW_ADMIN_USERNAME:-admin}
+      _AIRFLOW_WWW_USER_PASSWORD: ${AIRFLOW_ADMIN_PASSWORD}
+    command: version
+    restart: "no"
+
+  airflow-api-server:
+    <<: *airflow-common
+    command: api-server
+    ports:
+      - "${AIRFLOW_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/api/v2/monitor/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  airflow-scheduler:
+    <<: *airflow-common
+    command: scheduler
+    healthcheck:
+      test: ["CMD-SHELL", "airflow jobs check --job-type SchedulerJob --hostname '$${HOSTNAME}'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  airflow-dag-processor:
+    <<: *airflow-common
+    command: dag-processor
+    healthcheck:
+      test: ["CMD-SHELL", "airflow jobs check --job-type DagProcessorJob --hostname '$${HOSTNAME}'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+  airflow-logs:
+  airflow-config:

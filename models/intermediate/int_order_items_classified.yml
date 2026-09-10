@@ -1,0 +1,53 @@
+version: 2
+
+models:
+  - name: int_order_items_classified
+
+    description: >
+      Order-item records classified as valid or invalid according to
+      the existence of their order and product references.
+
+    columns:
+      - name: order_item_id
+        description: Unique identifier for each order-item record.
+        data_tests:
+          - not_null
+          - unique
+
+      - name: order_id
+        description: Identifier of the related order.
+
+      - name: product_id
+        description: Identifier of the related product.
+
+      - name: quantity
+        description: Number of product units in the order item.
+
+      - name: unit_price
+        description: Unit price of the product at the time of the order.
+
+      - name: discount_pct
+        description: Discount percentage applied to the order item.
+
+      - name: line_total
+        description: Final amount for the order-item line.
+
+      - name: warehouse_code
+        description: Code of the warehouse fulfilling the order item.
+
+      - name: record_status
+        description: >
+          Classification result indicating whether the record
+          is valid or invalid.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - VALID
+                  - INVALID
+
+      - name: invalid_reason
+        description: >
+          One or more reasons explaining why the order-item record
+          was classified as invalid.
